@@ -23,7 +23,6 @@ to setup
   ]
   ask n-of initial-infected-count humans [
     set besmet? true
-    set color red
   ]
 end
 
@@ -131,7 +130,7 @@ initial-infected-count
 initial-infected-count
 1
 1000
-1.0
+557.0
 1
 1
 NIL
