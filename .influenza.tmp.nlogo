@@ -1,12 +1,15 @@
 breed [humans human]
 
 globals [
-  n-populatiegrootte
-  r-reproductie
-  y-herstel
-  b-overdracht
-  c-contacturen
-  besmet?
+  n-population
+  r-reproduction
+  y-recovery
+  b-transmission
+  c-contacthours
+  s-scale
+  infected?
+  immune?
+  dS
 ]
 
 
@@ -14,21 +17,33 @@ to setup
   clear-all
   reset-ticks
   ask patches [ set pcolor white ]
+  ;; Create sprites
   create-humans 1000 [
     setxy random-xcor random-ycor
     set size 1.5
     set shape "person"
     set color green
-    set besmet? false
+    set infected? false
   ]
+  ;; Make humans sick
   ask n-of initial-infected-count humans [
-    set besmet? true
+    set infected? true
+    set color red
+  ]
+  ;; Select study and variables
+  if study = "A(H1N1) (CH 1918) chowell et.al." [
+    set n-population 3845405
+    set r-reproduction 1.49
+    set b-transmission 8
+    set c-contacthours int(-16 * (risk-aversion / 100) + 16)
+
   ]
 end
 
 to go
   if ticks = 8760 [ stop ]
-
+  set dS (b-transmission * (count humans with [color = red]) * (count humans with [color = green] - count humans with [color = grey])
+  print dS
   tick
 end
 @#$#@#$#@
@@ -101,7 +116,7 @@ CHOOSER
 study
 study
 "none (interactive mode)" "A(H1N1) liao et.al." "A(H3N2) liao et.al." "A(H1N1) (CH 1918) chowell et.al."
-0
+3
 
 PLOT
 836
@@ -112,14 +127,14 @@ SIS model
 t
 n
 0.0
-100.0
-0.0
 365.0
+0.0
+3845405.0
 true
 true
 "" ""
 PENS
-"default" 1.0 0 -16777216 true "" "plot count turtles"
+"" 1.0 0 -16777216 true "" "plot dS"
 
 SLIDER
 19
@@ -130,7 +145,7 @@ initial-infected-count
 initial-infected-count
 1
 1000
-557.0
+709.0
 1
 1
 NIL
@@ -145,7 +160,7 @@ risk-aversion
 risk-aversion
 0
 100
-20.0
+29.0
 1
 1
 %
