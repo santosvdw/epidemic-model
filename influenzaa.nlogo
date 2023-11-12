@@ -1,7 +1,21 @@
 breed [humans human]
+<<<<<<< HEAD
 
 humans-own [
   status
+=======
+;;test
+globals [
+  n-population
+  r-reproduction
+  y-recovery
+  b-transmission
+  c-contacthours
+  s-scale
+  infected?
+  immune?
+  dS
+>>>>>>> 8d0717d447f5dde9ce1cee43f86b066994a943cc
 ]
 
 to setup
