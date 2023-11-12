@@ -1,25 +1,82 @@
 breed [humans human]
 
+globals [
+  total-infected-count
+]
+
 humans-own [
   status
+  days-infected
+  infected-count
 ]
 
 to setup
-  ask patches [ set pcolor white]
+  clear-all
+  reset-ticks
+  ask patches [set pcolor white]
+  create-humans population-size [
+    set shape "circle"
+    set color green
+    set size 1
+    set status "susceptible"
+    setxy random-xcor random-ycor
+  ]
+  ask n-of initial-infected-count humans [
+    set color red
+    set status "infected"
+    set total-infected-count initial-infected-count
+    setxy 0 0
+  ]
 end
 
 to go
+  if count humans with [status = "infected"] = 0 [stop]
+  ask humans [
+    move
+    if status = "infected" [
+      set days-infected days-infected + 1
+      if days-infected > 28 [recover]
+      infect
+    ]
+  ]
   tick
+end
+
+to move
+  fd 1
+  rt random 20
+end
+
+to infect
+  if random-float 100 < infectiousness [
+    ask other humans-here with [ status = "susceptible" ] [
+      set status "infected"
+      set color red
+      set total-infected-count total-infected-count + 1
+    ]
+  ]
+end
+
+to recover
+  set status "recovered"
+  set color grey
+end
+
+
+to socially-distance
+  ask humans [
+    ;;if (count (humans-on neighbors) > 0) [fd 1 rt 90]
+  ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-348
+228
 10
-717
-380
+716
+499
 -1
 -1
-3.5814
+4.9505
 1
 10
 1
@@ -29,10 +86,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--50
-50
--50
-50
+-48
+48
+-48
+48
 1
 1
 1
@@ -40,10 +97,10 @@ ticks
 30.0
 
 BUTTON
-14
-29
-77
-62
+16
+31
+79
+64
 NIL
 setup
 NIL
@@ -56,40 +113,10 @@ NIL
 NIL
 1
 
-SLIDER
-16
-81
-188
-114
-population-size
-population-size
-100
-5000
-820.0
-10
-1
-NIL
-HORIZONTAL
-
-SLIDER
-19
-121
-191
-154
-infected-amount
-infected-amount
-1
-population-size
-43.0
-1
-1
-NIL
-HORIZONTAL
-
 BUTTON
-85
+91
 32
-148
+154
 65
 NIL
 go
@@ -103,10 +130,83 @@ NIL
 NIL
 0
 
-@#$#@#$#@
-# INFORMATICA PO
-`Santos van der Wansem (V6D)`
+SLIDER
+24
+94
+196
+127
+population-size
+population-size
+100
+5000
+1000.0
+10
+1
+NIL
+HORIZONTAL
 
+SLIDER
+27
+137
+199
+170
+initial-infected-count
+initial-infected-count
+1
+population-size
+1.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+29
+182
+201
+215
+infectiousness
+infectiousness
+0.1
+100
+52.3
+0.1
+1
+%
+HORIZONTAL
+
+PLOT
+759
+25
+959
+175
+Infectedness
+people
+days
+0.0
+10.0
+0.0
+10.0
+true
+true
+"" ""
+PENS
+"recovered" 1.0 0 -7500403 true "" "plot count turtles with [status = \"recovered\"]"
+"infected" 1.0 0 -2674135 true "" "plot count turtles with [status = \"infected\"]"
+"susceptible" 1.0 0 -13840069 true "" "plot count turtles with [status = \"susceptible\"] "
+
+MONITOR
+765
+189
+858
+234
+infected count
+count humans with [status = \"infected\"]
+17
+1
+11
+
+@#$#@#$#@
 ## WHAT IS IT?
 
 (a general understanding of what the model is trying to show or explain)
@@ -452,6 +552,24 @@ NetLogo 6.3.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
+<experiments>
+  <experiment name="experiment" repetitions="100" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count humans with [status = "susceptible"]</metric>
+    <metric>count humans with [status = "infected"]</metric>
+    <metric>count humans with [status = "recovered"]</metric>
+    <enumeratedValueSet variable="initial-infected-count">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="infectiousness">
+      <value value="21.1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="population-size">
+      <value value="1000"/>
+    </enumeratedValueSet>
+  </experiment>
+</experiments>
 @#$#@#$#@
 @#$#@#$#@
 default

@@ -42,7 +42,7 @@ end
 
 to go
   if ticks = 8760 [ stop ]
-  set dS (b-transmission * (count humans with [color = red]) * (count humans with [color = green] - count humans with [color = grey])
+  set dS (b-transmission * (count humans with [color = red]) * (count humans with [color = green] - count humans with [color = grey])) / 1000
   print dS
   tick
 end
