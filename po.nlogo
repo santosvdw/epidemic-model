@@ -2,37 +2,59 @@ breed [humans human]
 
 globals [
   total-infected-count
+  mask-threshold-reached?
+  social-distance-threshold-reached?
 ]
 
 humans-own [
   status
   days-infected
   infected-count
+  wears-mask?
+  socially-distanced?
 ]
 
 to setup
   clear-all
   reset-ticks
   ask patches [set pcolor white]
+  let counter 0
   create-humans population-size [
-    set shape "circle"
+    set counter counter + 1
+    set shape shape-variant
     set color green
     set size 1
     set status "susceptible"
-    setxy random-xcor random-ycor
+    set socially-distanced? false
+    set wears-mask? false
+    ;setxy int((random-normal (32 / 2) (max-pxcor / 7))) int((random-normal (32 / 2) (max-pycor / 7)))
+
+    set xcor xcor - 16 + random-float 48
+    set ycor ycor - 16 + random-float 48
+
+   ; let ycor ycor - 16 + random-float 16
+    if random 2 = 1 [set xcor xcor * -1]
+    if random 2 = 1 [set ycor ycor * -1]
   ]
+
   ask n-of initial-infected-count humans [
     set color red
     set status "infected"
     set total-infected-count initial-infected-count
     setxy 0 0
   ]
+
+  set mask-threshold-reached? false
+  set social-distance-threshold-reached? false
 end
 
 to go
   if count humans with [status = "infected"] = 0 [stop]
+  check-mask-threshold
+  check-social-distance-threshold
   ask humans [
-    move
+    if socially-distanced? = false [move]
+    if socially-distanced? [move-while-distanced]
     if status = "infected" [
       set days-infected days-infected + 1
       if days-infected > 28 [recover]
@@ -43,6 +65,7 @@ to go
 end
 
 to move
+  avoid-walls
   fd 1
   rt random 20
 end
@@ -51,8 +74,27 @@ to infect
   if random-float 100 < infectiousness [
     ask other humans-here with [ status = "susceptible" ] [
       set status "infected"
+      set wears-mask? false
       set color red
       set total-infected-count total-infected-count + 1
+
+      if wears-mask? [
+        if random 6 < 5 [
+          set status "susceptible"
+          set wears-mask? true
+          set color cyan
+          set total-infected-count total-infected-count - 1
+        ]
+      ]
+
+      if socially-distanced? [
+        if random 20 < 5 [
+          set status "susceptible"
+          set socially-distanced? true
+          set color magenta
+          set total-infected-count total-infected-count - 1
+        ]
+      ]
     ]
   ]
 end
@@ -62,21 +104,48 @@ to recover
   set color grey
 end
 
-
-to socially-distance
-  ask humans [
-    ;;if (count (humans-on neighbors) > 0) [fd 1 rt 90]
+to check-mask-threshold
+  if total-infected-count > mask-threshold [
+    if mask-threshold-reached? = false [
+      set mask-threshold-reached? true
+      ask n-of (count humans with [status = "susceptible"] * (mask-percentage / 100)) humans with [status = "susceptible"] [
+        set wears-mask? true
+        set color cyan
+      ]
+    ]
   ]
+end
+
+to check-social-distance-threshold
+  if total-infected-count > social-distance-threshold [
+    if social-distance-threshold-reached? = false [
+      set social-distance-threshold-reached? true
+      ask n-of (count humans with [status = "susceptible"] * (social-distance-percentage / 100)) humans with [status = "susceptible"] [
+        set socially-distanced? true
+        set color magenta
+      ]
+    ]
+  ]
+end
+
+to move-while-distanced
+  fd 0.3
+  rt 180
+end
+
+to avoid-walls ;; turtle procedure
+  if not can-move? 1
+  [ rt 180 ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
 228
 10
-716
-499
+669
+452
 -1
 -1
-4.9505
+6.662
 1
 10
 1
@@ -86,10 +155,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--48
-48
--48
-48
+-32
+32
+-32
+32
 1
 1
 1
@@ -169,7 +238,7 @@ infectiousness
 infectiousness
 0.1
 100
-52.3
+58.0
 0.1
 1
 %
@@ -181,8 +250,8 @@ PLOT
 959
 175
 Infectedness
-people
 days
+people
 0.0
 10.0
 0.0
@@ -202,6 +271,109 @@ MONITOR
 234
 infected count
 count humans with [status = \"infected\"]
+17
+1
+11
+
+SLIDER
+29
+222
+201
+255
+mask-percentage
+mask-percentage
+0
+100
+32.0
+1
+1
+%
+HORIZONTAL
+
+MONITOR
+766
+244
+1017
+289
+NIL
+count humans with [wears-mask? = true]
+17
+1
+11
+
+CHOOSER
+29
+264
+167
+309
+shape-variant
+shape-variant
+"circle" "person" "default"
+0
+
+SLIDER
+30
+322
+202
+355
+mask-threshold
+mask-threshold
+0
+population-size
+108.0
+1
+1
+NIL
+HORIZONTAL
+
+MONITOR
+771
+299
+866
+344
+days
+int(ticks / 4)
+17
+1
+11
+
+SLIDER
+31
+360
+234
+393
+social-distance-percentage
+social-distance-percentage
+0
+100
+50.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+33
+397
+225
+430
+social-distance-threshold
+social-distance-threshold
+0
+population-size
+0.0
+1
+1
+NIL
+HORIZONTAL
+
+MONITOR
+771
+353
+1053
+398
+NIL
+count humans with [socially-distanced? = true]
 17
 1
 11
