@@ -97,7 +97,7 @@ to infect
       set total-infected-count total-infected-count + 1
 
       if quarantaine? [
-        if random 100 > (100 - quarantaine-percentage) [
+        if random 100 > (quarantaine-percentage / 10) [
           set is-quarantained? true
           set color orange
         ]
@@ -434,7 +434,7 @@ quarantaine-percentage
 quarantaine-percentage
 0
 100
-59.0
+93.0
 1
 1
 %
