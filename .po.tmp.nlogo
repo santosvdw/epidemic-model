@@ -10,7 +10,6 @@ globals [
 humans-own [
   status
   days-infected
-  infected-count
   wears-mask?
   socially-distanced?
   is-quarantained?
@@ -97,7 +96,7 @@ to infect
       set total-infected-count total-infected-count + 1
 
       if quarantaine? [
-        if random 100 > (quarantaine-percentage / 10) [
+        if random 100 > (100 - quarantaine-percentage) [
           set is-quarantained? true
           set color orange
         ]
@@ -179,6 +178,16 @@ GRAPHICS-WINDOW
 ticks
 30.0
 
+TEXTBOX
+0
+0
+0
+0
+NIL
+11
+0.0
+1
+
 BUTTON
 16
 31
@@ -252,7 +261,7 @@ infectiousness
 infectiousness
 0.1
 100
-10.9
+15.6
 0.1
 1
 %
@@ -434,7 +443,7 @@ quarantaine-percentage
 quarantaine-percentage
 0
 100
-93.0
+59.0
 1
 1
 %
@@ -458,9 +467,39 @@ SWITCH
 500
 city-centre?
 city-centre?
-1
+0
 1
 -1000
+
+TEXTBOX
+692
+152
+842
+180
+leeftijd + doodgaan + inenting
+11
+0.0
+1
+
+TEXTBOX
+687
+187
+837
+205
+inbubatieperiode
+11
+0.0
+1
+
+TEXTBOX
+684
+212
+834
+230
+recovery + nieuw vatbaar
+11
+0.0
+1
 
 @#$#@#$#@
 ## WHAT IS IT?

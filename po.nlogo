@@ -10,7 +10,6 @@ globals [
 humans-own [
   status
   days-infected
-  infected-count
   wears-mask?
   socially-distanced?
   is-quarantained?
@@ -252,7 +251,7 @@ infectiousness
 infectiousness
 0.1
 100
-10.9
+15.6
 0.1
 1
 %
@@ -458,9 +457,49 @@ SWITCH
 500
 city-centre?
 city-centre?
-1
+0
 1
 -1000
+
+TEXTBOX
+692
+152
+842
+180
+leeftijd + doodgaan + inenting
+11
+0.0
+1
+
+TEXTBOX
+687
+187
+837
+205
+inbubatieperiode
+11
+0.0
+1
+
+TEXTBOX
+684
+212
+834
+230
+recovery + nieuw vatbaar
+11
+0.0
+1
+
+TEXTBOX
+685
+244
+835
+262
+quarantaine-threshold\n
+11
+0.0
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
