@@ -4,6 +4,7 @@ globals [
   total-infected-count
   mask-threshold-reached?
   social-distance-threshold-reached?
+  quarantaine-threshold-reached?
   market-cords
 ]
 
@@ -12,7 +13,8 @@ humans-own [
   days-infected
   wears-mask?
   socially-distanced?
-  is-quarantained?
+  is-quarantined?
+  time-since-recovery
 ]
 
 to setup
@@ -28,7 +30,7 @@ to setup
     set status "susceptible"
     set socially-distanced? false
     set wears-mask? false
-    set is-quarantained? false
+    set is-quarantined? false
 
     set xcor xcor - 16 + random-float 48
     set ycor ycor - 16 + random-float 48
@@ -45,6 +47,7 @@ to setup
 
   set mask-threshold-reached? false
   set social-distance-threshold-reached? false
+  set quarantaine-threshold-reached? false
 
   set market-cords [[1 1] [1 -1] [-1 1] [-1 -1] [0 0] [0 1] [0 -1] [1 0] [-1 0]]
   if city-centre? [ask patches at-points market-cords [ set pcolor grey - 3]]
@@ -52,21 +55,34 @@ end
 
 to go
   if count humans with [status = "infected"] = 0 [stop]
+  if count humans with [status = "susceptible"] = 0 [stop]
+  if ticks = 3000 [stop]
   check-mask-threshold
   check-social-distance-threshold
+  check-quarantaine-threshold
   ask humans [
-    if (xcor = (one-of [-1 0 1]) and ycor = (one-of [-1 0 1])) [setxy (one-of [-10 -8 -6 -4 -3 -2 2 3 4 6 8 10]) (one-of [-10 -8 -6 -4 -3 -2 2 3 4 6 8 10])]
     if city-centre? [
+      if (xcor = (one-of [-1 0 1]) and ycor = (one-of [-1 0 1])) [setxy (one-of [-10 -8 -6 -4 -3 -2 2 3 4 6 8 10]) (one-of [-10 -8 -6 -4 -3 -2 2 3 4 6 8 10])]
       if random 300 = 1 [
         setxy (one-of [-1 0 1]) (one-of [-1 0 1])
-    ]]
+      ]
+    ]
     if socially-distanced? = false [move]
     if socially-distanced? [move-while-distanced]
-    if is-quarantained? [setxy max-pxcor max-pycor]
+    if is-quarantined? [setxy max-pxcor max-pycor]
     if status = "infected" [
       set days-infected days-infected + 1
-      if days-infected > 56 [recover]
+      if days-infected > (disease-duration * 4) [recover]
       infect
+    ]
+    if status = "recovered" [
+      set time-since-recovery time-since-recovery + 1
+      if time-since-recovery >= (days-immune * 4) [
+        set status "susceptible"
+        set color green
+        if random 100 < mask-percentage and mask-threshold-reached? [set wears-mask? true set color cyan]
+        if random 100 < social-distance-percentage and social-distance-threshold-reached? [set socially-distanced? true set color magenta]
+      ]
     ]
   ]
   tick
@@ -83,22 +99,25 @@ to infect
   if random-float 100 < infectiousness [
     ask other humans-here with [ status = "susceptible" ] [
       if socially-distanced? [
-        if random 25 < 24 [stop]
+        if random 10 < 9 [stop]
       ]
       if wears-mask? [
         if random 6 < 5 [stop]
       ]
 
+      set days-infected 0
       set status "infected"
       set wears-mask? false
       set socially-distanced? false
       set color red
       set total-infected-count total-infected-count + 1
 
-      if quarantaine? [
-        if random 100 > (100 - quarantaine-percentage) [
-          set is-quarantained? true
-          set color orange
+      if quarantaine-threshold-reached? [
+        if quarantaine? [
+          if random 100 > (100 - quarantaine-percentage) [
+            set is-quarantined? true
+            set color orange
+          ]
         ]
       ]
     ]
@@ -106,14 +125,22 @@ to infect
 end
 
 to recover
-  set status "recovered"
-  set wears-mask? false
-  set socially-distanced? false
-  if is-quarantained? [
-    set is-quarantained? false
-    setxy random-xcor random-ycor
+  set time-since-recovery 0
+  if is-quarantined? [
+      set is-quarantined? false
+      setxy random-xcor random-ycor
+    ]
+  if longlasting-immunity? [
+    set status "recovered"
+    set wears-mask? false
+    set socially-distanced? false
+    set color grey
+    stop
   ]
-  set color grey
+  set color green
+  set status "susceptible"
+  if random 100 < mask-percentage and mask-threshold-reached? [set wears-mask? true set color cyan]
+  if random 100 < social-distance-percentage and social-distance-threshold-reached? [set socially-distanced? true set color magenta]
 end
 
 to check-mask-threshold
@@ -128,11 +155,11 @@ to check-mask-threshold
   ]
 end
 
-to check-social-distance-threshold
+to check-quarantaine-threshold
   if total-infected-count > social-distance-threshold [
     if social-distance-threshold-reached? = false [
       set social-distance-threshold-reached? true
-      ask n-of (count humans * (social-distance-percentage / 100)) humans [ ; count humans with [status = "susceptible"] ; with [status = "susceptible"] [
+      ask n-of (count humans * (social-distance-percentage / 100)) humans [
         set socially-distanced? true
         set color magenta
         if status = "infected" [ set color pink ]
@@ -141,8 +168,21 @@ to check-social-distance-threshold
   ]
 end
 
+to check-social-distance-threshold
+  if total-infected-count > quarantaine-threshold [
+    if quarantaine-threshold-reached? = false [
+      set quarantaine-threshold-reached? true
+      ask n-of (count humans with [status = "infected"] * (quarantaine-percentage / 100)) humans with [status = "infected"] [
+        set is-quarantined? true
+        set color magenta
+        if status = "infected" [ set color pink ]
+      ]
+    ]
+  ]
+end
+
 to move-while-distanced
-  fd 0.3
+  fd 0.5
   rt 180
 end
 
@@ -152,9 +192,9 @@ to avoid-walls ;; turtle procedure
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-228
+395
 10
-669
+836
 452
 -1
 -1
@@ -179,10 +219,10 @@ ticks
 30.0
 
 BUTTON
-16
-31
-79
-64
+28
+13
+91
+46
 NIL
 setup
 NIL
@@ -196,10 +236,10 @@ NIL
 1
 
 BUTTON
-91
-32
-154
-65
+103
+14
+166
+47
 NIL
 go
 T
@@ -213,10 +253,10 @@ NIL
 0
 
 SLIDER
-24
-94
-196
-127
+29
+109
+191
+142
 population-size
 population-size
 100
@@ -228,10 +268,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-27
-137
-199
-170
+197
+109
+360
+142
 initial-infected-count
 initial-infected-count
 1
@@ -243,25 +283,25 @@ NIL
 HORIZONTAL
 
 SLIDER
-29
-182
-201
-215
+27
+146
+190
+179
 infectiousness
 infectiousness
 0.1
 100
-15.6
+10.0
 0.1
 1
 %
 HORIZONTAL
 
 PLOT
-759
-25
-1203
-175
+893
+14
+1337
+164
 Infectedness
 days
 people
@@ -278,11 +318,11 @@ PENS
 "susceptible" 1.0 0 -13840069 true "" "plot count turtles with [status = \"susceptible\"] "
 
 MONITOR
-765
-189
-858
-234
-infected count
+953
+323
+1003
+368
+I
 count humans with [status = \"infected\"]
 17
 1
@@ -291,59 +331,59 @@ count humans with [status = \"infected\"]
 SLIDER
 29
 222
-201
+187
 255
 mask-percentage
 mask-percentage
 0
 100
-54.0
+0.0
 1
 1
 %
 HORIZONTAL
 
 MONITOR
-766
-244
-1017
-289
-NIL
+901
+422
+980
+467
+mask wearers
 count humans with [wears-mask? = true]
 17
 1
 11
 
 CHOOSER
-29
-264
-167
-309
+28
+56
+166
+101
 shape-variant
 shape-variant
 "circle" "person" "default"
 0
 
 SLIDER
-30
-322
-202
-355
+194
+222
+354
+255
 mask-threshold
 mask-threshold
 0
 population-size
-624.0
-1
+0.0
+100
 1
 NIL
 HORIZONTAL
 
 MONITOR
-771
-299
-866
-344
+900
+373
+995
+418
 days
 int(ticks / 3)
 17
@@ -351,51 +391,51 @@ int(ticks / 3)
 11
 
 SLIDER
-31
-360
-234
-393
+30
+267
+186
+300
 social-distance-percentage
 social-distance-percentage
 0
 100
-21.0
+0.0
 1
 1
-NIL
+%
 HORIZONTAL
 
 SLIDER
-33
-397
-225
-430
+194
+267
+354
+300
 social-distance-threshold
 social-distance-threshold
 0
 population-size
-1017.0
-1
+0.0
+100
 1
 NIL
 HORIZONTAL
 
 MONITOR
-771
-353
-1053
-398
-NIL
+985
+422
+1079
+467
+socially distanced
 count humans with [socially-distanced? = true]
 17
 1
 11
 
 MONITOR
-882
-191
-1006
-236
+999
+373
+1123
+418
 NIL
 total-infected-count
 17
@@ -403,103 +443,150 @@ total-infected-count
 11
 
 MONITOR
-1014
-192
-1264
-237
-NIL
+899
+323
+949
+368
+S
 count humans with [status = \"susceptible\"]
 17
 1
 11
 
 SWITCH
-39
-441
-167
-474
+30
+311
+144
+344
 quarantaine?
 quarantaine?
-0
+1
 1
 -1000
 
 SLIDER
-176
-454
-377
-487
+152
+312
+328
+345
 quarantaine-percentage
 quarantaine-percentage
 0
 100
-59.0
+0.0
 1
 1
 %
 HORIZONTAL
 
 MONITOR
-1031
-245
-1118
-290
+1083
+422
+1170
+467
 quarantained
-count humans with [is-quarantained?]
+count humans with [is-quarantined?]
 17
 1
 11
 
 SWITCH
-392
-467
-513
-500
+175
+57
+296
+90
 city-centre?
 city-centre?
 0
 1
 -1000
 
-TEXTBOX
-692
-152
-842
-180
-leeftijd + doodgaan + inenting
-11
-0.0
+MONITOR
+1008
+323
+1065
+368
+R
+count humans with [status = \"recovered\"]
+17
 1
+11
 
-TEXTBOX
-687
-187
-837
-205
-inbubatieperiode
-11
+SLIDER
+34
+349
+207
+382
+quarantaine-threshold
+quarantaine-threshold
+0
+population-size
 0.0
+100
 1
+NIL
+HORIZONTAL
 
-TEXTBOX
-684
-212
-834
-230
-recovery + nieuw vatbaar
-11
-0.0
+SWITCH
+196
+146
+369
+179
+longlasting-immunity?
+longlasting-immunity?
+0
 1
+-1000
 
-TEXTBOX
-685
-244
-835
-262
-quarantaine-threshold\n
-11
-0.0
+SLIDER
+197
+183
+369
+216
+days-immune
+days-immune
+0
+365
+365.0
 1
+1
+days
+HORIZONTAL
+
+SLIDER
+31
+185
+189
+218
+disease-duration
+disease-duration
+2
+30
+14.0
+1
+1
+days
+HORIZONTAL
+
+PLOT
+894
+169
+1332
+319
+measures
+people
+days
+0.0
+10.0
+0.0
+10.0
+true
+true
+"" ""
+PENS
+"mask wearers" 1.0 0 -11221820 true "" "plot count humans with [wears-mask?]"
+"social distancers" 1.0 0 -5825686 true "" "plot count humans with [socially-distanced?]"
+"quarantined" 1.0 0 -955883 true "" "plot count humans with [is-quarantined?]"
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -862,6 +949,85 @@ NetLogo 6.3.0
     </enumeratedValueSet>
     <enumeratedValueSet variable="population-size">
       <value value="1000"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="baseline" repetitions="100" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count humans with [status = "infected"]</metric>
+  </experiment>
+  <experiment name="masks" repetitions="15" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count humans with [status = "infected"]</metric>
+    <enumeratedValueSet variable="mask-threshold">
+      <value value="500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="mask-percentage">
+      <value value="10"/>
+      <value value="25"/>
+      <value value="50"/>
+      <value value="75"/>
+      <value value="100"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="sd" repetitions="15" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count humans with [status = "infected"]</metric>
+    <enumeratedValueSet variable="social-distance-percentage">
+      <value value="10"/>
+      <value value="25"/>
+      <value value="50"/>
+      <value value="75"/>
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="social-distance-threshold">
+      <value value="500"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="quarantaine" repetitions="15" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count humans with [status = "infected"]</metric>
+    <enumeratedValueSet variable="quarantaine-threshold">
+      <value value="500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="quarantaine-percentage">
+      <value value="10"/>
+      <value value="25"/>
+      <value value="50"/>
+      <value value="75"/>
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="quarantaine?">
+      <value value="true"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="all" repetitions="75" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count humans with [status = "infected"]</metric>
+    <enumeratedValueSet variable="quarantaine-threshold">
+      <value value="500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="quarantaine-percentage">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="mask-threshold">
+      <value value="500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="mask-percentage">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="social-distance-threshold">
+      <value value="500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="social-distance-percentage">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="quarantaine?">
+      <value value="true"/>
     </enumeratedValueSet>
   </experiment>
 </experiments>
