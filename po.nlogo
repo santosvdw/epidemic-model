@@ -337,7 +337,7 @@ mask-percentage
 mask-percentage
 0
 100
-0.0
+54.0
 1
 1
 %
@@ -373,7 +373,7 @@ mask-threshold
 mask-threshold
 0
 population-size
-0.0
+500.0
 100
 1
 NIL
@@ -414,7 +414,7 @@ social-distance-threshold
 social-distance-threshold
 0
 population-size
-0.0
+1200.0
 100
 1
 NIL
@@ -521,7 +521,7 @@ quarantaine-threshold
 quarantaine-threshold
 0
 population-size
-0.0
+500.0
 100
 1
 NIL
@@ -547,7 +547,7 @@ days-immune
 days-immune
 0
 365
-365.0
+93.0
 1
 1
 days
@@ -590,8 +590,7 @@ PENS
 
 @#$#@#$#@
 ## WHAT IS IT?
-
-(a general understanding of what the model is trying to show or explain)
+Dit model concentreert zich specifiek op het beperken van de verspreiding van de ziekte tijdens een epidemie. Het houdt geen rekening met factoren zoals de ernst van de ziekte (de impact op individuen), het effect van de maatregelen op de economie of het algemene geluk van mensen, omdat deze geen directe correlatie hebben met de verspreiding van de ziekte. Het uiteindelijke doel van dit model is om een breed scala aan virussen te modelleren, dankzij de gemakkelijke generaliseerbaarheid ervan. Bovendien kan het worden uitgebreid door extra maatregelen of omgevingsvariabelen toe te voegen.
 
 ## HOW IT WORKS
 
