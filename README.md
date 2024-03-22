@@ -1,4 +1,4 @@
-# influenza-model
+# Epidemic model
 # Door [Santos van der Wansem](https://santosvdw.nl)
 
 ## WAT IS HET?
